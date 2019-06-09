@@ -82,3 +82,10 @@ func TestPanic(t *testing.T) {
 	a := Resolve("this will give error").Then(addOne).Then(addOne, getErrorMessage)
 	assertValue(t, <-a.ch, err_msg, "TestPanic failed")
 }
+
+func TestCatch(t *testing.T) {
+	err_msg := "Error!"
+	var identityFunc = func(arg interface{}) interface{} { return arg }
+	a := Reject(err_msg).Catch(identityFunc)
+	assertValue(t, <-a.ch, err_msg, "TestCatch failed")
+}

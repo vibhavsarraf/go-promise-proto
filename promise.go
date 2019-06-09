@@ -77,3 +77,8 @@ func (p Promise) Then(args ...PromiseFunc) Promise {
 	go apply(p, p_new, args)
 	return p_new
 }
+
+func (p Promise) Catch(onRejected PromiseFunc) Promise {
+	var identityFunc = func(arg interface{}) interface{} { return arg }
+	return p.Then(identityFunc, onRejected)
+}
