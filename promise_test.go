@@ -1,8 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 )
+
+var fmtWrapper = func(x interface{}) interface{} {
+	fmt.Println(x)
+	return x
+}
 
 func addOne(a interface{}) interface{} {
 	if val, ok := a.(int); ok {
@@ -26,6 +32,11 @@ func subtractOne(a interface{}) interface{} {
 
 func getSubtractOnePromise(a interface{}) interface{} {
 	return Resolve(subtractOne(a))
+}
+
+func errFunc(a interface{}) interface{} {
+	panic("Error Function called")
+	return 0
 }
 
 func assertValue(t *testing.T, testValue, expectedValue interface{}, msg string) {
@@ -88,4 +99,51 @@ func TestCatch(t *testing.T) {
 	var identityFunc = func(arg interface{}) interface{} { return arg }
 	a := Reject(err_msg).Catch(identityFunc)
 	assertValue(t, <-a.ch, err_msg, "TestCatch failed")
+}
+
+func TestFinally(t *testing.T) {
+	a := Resolve(7).Then(errFunc).Finally(
+		func(x interface{}) interface{} { return 8 },
+	)
+	assertValue(t, <-a.ch, 8, "TestFinally failed")
+}
+
+func TestMultipleTypes(t *testing.T) {
+	var getDay = func(x interface{}) interface{} {
+		if val, ok := x.(int); ok {
+			switch val {
+			case 1:
+				return "Monday"
+			case 2:
+				return "Tuesday"
+			case 3:
+				return "Wednesday"
+			case 4:
+				return "Thrusday"
+			case 5:
+				return "Friday"
+			case 6:
+				return "Saturday"
+			case 7:
+				return "Sunday"
+			}
+		}
+		panic("input to getDay should be an integet between 1 and 7")
+	}
+	var getLength = func(x interface{}) interface{} {
+		if val, ok := x.([]interface{}); ok {
+			return len(val)
+		}
+		if val, ok := x.(string); ok {
+			return len(val)
+		}
+		panic("input to getLength should be of type []interface{} or string")
+		return 0
+	}
+
+	a := Resolve(7).Then(getDay).Then(getLength)
+	assertValue(t, <-a.ch, 6, "TestMultipleTypes failed")
+	arr := []interface{}{0, 1, 2, 3}
+	a = Resolve(arr).Then(getLength)
+	assertValue(t, <-a.ch, 4, "TestMultipleTypes failed")
 }

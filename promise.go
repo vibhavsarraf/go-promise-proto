@@ -82,3 +82,7 @@ func (p Promise) Catch(onRejected PromiseFunc) Promise {
 	var identityFunc = func(arg interface{}) interface{} { return arg }
 	return p.Then(identityFunc, onRejected)
 }
+
+func (p Promise) Finally(onFinally PromiseFunc) Promise {
+	return p.Then(onFinally, onFinally)
+}
