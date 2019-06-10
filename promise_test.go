@@ -85,6 +85,15 @@ func TestPromiseInsideResolve(t *testing.T) {
 	assertValue(t, <-a.ch, 9, "TestPromiseInsideResolve Failed")
 }
 
+func TestForAsyncBehavior(t *testing.T) {
+	a := Resolve(8).Then(fmtWrapper)
+	fmt.Println("Test if 7 is printed before 8 in the following two lines")
+	fmt.Println(7)
+	a = a.Then(addOne)
+	<-a.ch
+
+}
+
 func TestPanic(t *testing.T) {
 	err_msg := "Error!"
 	var getErrorMessage = func(msg interface{}) interface{} {
