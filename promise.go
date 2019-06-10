@@ -1,10 +1,15 @@
 package main
 
+//Promise object with ch channel for resolve and err_ch channel for reject
 type Promise struct {
 	ch     chan interface{}
 	err_ch chan interface{}
 }
 
+/*
+PromiseFunc defines the type for all the functions passed inside
+Then, Catch and Finally
+*/
 type PromiseFunc func(arg interface{}) interface{}
 
 func newPromise() Promise {
@@ -14,6 +19,7 @@ func newPromise() Promise {
 	return p
 }
 
+// passes the output of old channel to new channel
 func passChannel(new_ch chan interface{}, old_ch chan interface{}) {
 	go func() { new_ch <- (<-old_ch) }()
 }
@@ -22,12 +28,13 @@ func passChannelValue(ch chan interface{}, val interface{}) {
 	go func() { ch <- val }()
 }
 
+//Move channels from old promise to new promise
 func passChannels(p_new Promise, p_old Promise) {
 	passChannel(p_new.ch, p_old.ch)
 	passChannel(p_new.err_ch, p_old.err_ch)
 }
 
-//Resolve returns a promise that resolves to the give input value
+//Resolve returns a promise that resolves to the give input value/promise
 func Resolve(arg interface{}) Promise {
 	if _, ok := arg.(Promise); ok {
 		return arg.(Promise)
@@ -37,6 +44,7 @@ func Resolve(arg interface{}) Promise {
 	return p
 }
 
+//Reject returns a promise that rejects to the give input value/promise
 func Reject(arg interface{}) Promise {
 	var p = newPromise()
 	if _, ok := arg.(Promise); ok {
@@ -46,6 +54,10 @@ func Reject(arg interface{}) Promise {
 	return p
 }
 
+/*
+Resolve the second argument and pass it to the promise in first argument.
+The second argument could be a value or a promise
+*/
 func handlePromise(p Promise, val interface{}) {
 	if _, ok := val.(Promise); ok {
 		passChannels(p, val.(Promise))
@@ -54,6 +66,12 @@ func handlePromise(p Promise, val interface{}) {
 	}
 }
 
+/*
+args[0] (onFulfilled) must exist and is a function that returns a value or a promise
+args[1] (onRejected) is optional and is a function that returns a value or a promise
+The functions can panic when called
+and in that case we pass the err_msg to error channel of new Promise
+*/
 func apply(p, p_new Promise, args []PromiseFunc) {
 	defer func() {
 		if r := recover(); r != nil {
